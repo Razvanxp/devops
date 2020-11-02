@@ -1,0 +1,119 @@
+{
+ "properties": {
+  "displayName": "Enforce Monitoring of KeyVaults",
+  "policyType": "Custom",
+  "mode": "All",
+  "description": "Enforce monitoring of KeyVaults to Log Analytics",
+  "metadata": {
+   "createdBy": "26e5e42b-1be3-41a3-84e2-bcdca5d2a872",
+   "createdOn": "2020-08-21T12:11:09.9903201Z",
+   "updatedBy": null,
+   "updatedOn": null
+  },
+  "parameters": {
+   "logAnalytics": {
+    "type": "String",
+    "metadata": {
+     "displayName": "Log Analytics workspace",
+     "description": "Select the Log Analytics workspace from dropdown list",
+     "strongType": "omsWorkspace"
+    }
+   }
+  },
+  "policyRule": {
+   "if": {
+    "field": "type",
+    "equals": "Microsoft.KeyVault/vaults"
+   },
+   "then": {
+    "effect": "deployIfNotExists",
+    "details": {
+     "type": "Microsoft.Insights/diagnosticSettings",
+     "roleDefinitionIds": [
+      "/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+     ],
+     "existenceCondition": {
+      "allOf": [
+       {
+        "field": "Microsoft.Insights/diagnosticSettings/logs.enabled",
+        "equals": "true"
+       },
+       {
+        "field": "Microsoft.Insights/diagnosticSettings/metrics.enabled",
+        "equals": "true"
+       },
+       {
+        "field": "Microsoft.Insights/diagnosticSettings/workspaceId",
+        "equals": "[parameters('logAnalytics')]"
+       }
+      ]
+     },
+     "deployment": {
+      "properties": {
+       "mode": "incremental",
+       "parameters": {
+        "logAnalytics": {
+         "value": "[parameters('logAnalytics')]"
+        },
+        "location": {
+         "value": "[field('location')]"
+        },
+        "vaultName": {
+         "value": "[field('name')]"
+        }
+       },
+       "template": {
+        "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+        "contentVersion": "1.0.0.0",
+        "parameters": {
+         "vaultName": {
+          "type": "string"
+         },
+         "logAnalytics": {
+          "type": "string"
+         },
+         "location": {
+          "type": "string"
+         }
+        },
+        "variables": {},
+        "resources": [
+         {
+          "type": "Microsoft.KeyVault/vaults/providers/diagnosticSettings",
+          "apiVersion": "2017-05-01-preview",
+          "name": "[concat(parameters('vaultName'), '/', 'Microsoft.Insights/setByPolicy')]",
+          "location": "[parameters('location')]",
+          "dependsOn": [],
+          "properties": {
+           "workspaceId": "[parameters('logAnalytics')]",
+           "metrics": [
+            {
+             "category": "AllMetrics",
+             "enabled": true,
+             "retentionPolicy": {
+              "enabled": false,
+              "days": 0
+             }
+            }
+           ],
+           "logs": [
+            {
+             "category": "AuditEvent",
+             "enabled": true
+            }
+           ]
+          }
+         }
+        ],
+        "outputs": {}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "id": "/subscriptions/b5e05303-a7cb-41ce-a1ac-6c8420a44235/providers/Microsoft.Authorization/policyDefinitions/Enforce-Monitoring-KeyVault",
+ "type": "Microsoft.Authorization/policyDefinitions",
+ "name": "Enforce-Monitoring-KeyVault"
+}
